@@ -1,0 +1,53 @@
+
+name: Convert Markdown to PDF
+
+# Déclenchement automatique
+on:
+  push:
+    paths:
+      - 'cours/**/*.md'
+      - 'cours/*.md'
+      - '.github/workflows/markdown-to-pdf.yml'
+
+  # Permet aussi de lancer la conversion manuellement
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Récupération du contenu du dépôt
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Installation des outils nécessaires
+      - name: Install Pandoc and LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex texlive-lang-french
+
+      # Conversion des fichiers Markdown
+      - name: Convert Markdown files
+        run: |
+          mkdir -p build
+
+          for file in cours/*.md; do
+            [ -f "$file" ] || continue
+            filename=$(basename "$file" .md)
+
+            pandoc "$file" \
+              -o "build/$filename.pdf" \
+              --pdf-engine=xelatex \
+              --highlight-style=tango \
+              --toc \
+              -V lang=fr-FR \
+              -V geometry:margin=2.5cm
+          done
+
+      # Mise à disposition des PDF
+      - name: Upload PDFs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cours-python-pdf
+          path: build/*.pdf
